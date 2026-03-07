@@ -4,6 +4,21 @@ Trellis is a VS Code extension that bootstraps a structured terminal layout for 
 
 ---
 
+## Installation
+
+```bash
+git clone https://github.com/kelvinluime/trellis.git
+cd trellis
+npm install
+npm install -g @vscode/vsce
+vsce package --allow-missing-repository
+code --install-extension trellis-0.1.0.vsix
+```
+
+Then restart VS Code.
+
+---
+
 ## Usage
 
 ### Prerequisites
