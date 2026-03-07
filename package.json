@@ -1,0 +1,66 @@
+{
+  "name": "trellis",
+  "displayName": "Trellis",
+  "description": "Bootstraps a structured terminal layout for git worktree + AI agent workflows",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "license": "MIT",
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:.git"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "trellis.launch",
+        "title": "Trellis: Launch Session"
+      },
+      {
+        "command": "trellis.focus",
+        "title": "Trellis: Focus Terminal"
+      },
+      {
+        "command": "trellis.killAll",
+        "title": "Trellis: Kill All Trellis Terminals"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "trellis.focus",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t"
+      }
+    ],
+    "configuration": {
+      "title": "Trellis",
+      "properties": {
+        "trellis.agentCommand": {
+          "type": "string",
+          "default": "claude",
+          "description": "Command to run in agent terminals (e.g. claude, codex, or any custom string)."
+        },
+        "trellis.autoLaunchOnOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, automatically run Launch Session when a workspace with worktrees is opened."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
