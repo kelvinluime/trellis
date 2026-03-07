@@ -2,7 +2,10 @@
   "name": "trellis",
   "displayName": "Trellis",
   "description": "Bootstraps a structured terminal layout for git worktree + AI agent workflows",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "publisher": "kelvinluime",
+  "icon": "images/trellis-icon-128.png",
+  "repository": "https://github.com/kelvinluime/trellis",
   "engines": {
     "vscode": "^1.85.0"
   },
