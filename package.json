@@ -28,8 +28,12 @@
         "title": "Trellis: Focus Terminal"
       },
       {
-        "command": "trellis.killAll",
-        "title": "Trellis: Kill All Trellis Terminals"
+        "command": "trellis.cleanup",
+        "title": "Trellis: Clean Up Stale Terminals"
+      },
+      {
+        "command": "trellis.manage",
+        "title": "Trellis: Manage Worktrees"
       }
     ],
     "keybindings": [

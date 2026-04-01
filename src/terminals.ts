@@ -56,13 +56,30 @@ export function createTrellisTerminals(
 }
 
 /**
- * Dispose all terminals whose names were created by Trellis.
+ * Dispose terminals for worktrees that no longer exist.
+ * Keeps terminals whose name prefix matches "main" or an active worktree name.
  */
-export function killAllTrellisTerminals(): void {
-  // Snapshot the array first — disposing mutates vscode.window.terminals
-  const targets = vscode.window.terminals.filter(
-    (t) => t.name.endsWith(AGENT_SUFFIX) || t.name.endsWith(CLI_SUFFIX)
-  );
+export function killStaleTerminals(activeWorktrees: Worktree[]): void {
+  const validPrefixes = new Set<string>(["main"]);
+  for (const wt of activeWorktrees) {
+    if (!wt.isMain) {
+      validPrefixes.add(wt.name);
+    }
+  }
+
+  const targets = vscode.window.terminals.filter((t) => {
+    const suffix = t.name.endsWith(AGENT_SUFFIX)
+      ? AGENT_SUFFIX
+      : t.name.endsWith(CLI_SUFFIX)
+      ? CLI_SUFFIX
+      : null;
+    if (!suffix) {
+      return false;
+    }
+    const prefix = t.name.slice(0, t.name.length - suffix.length);
+    return !validPrefixes.has(prefix);
+  });
+
   for (const t of targets) {
     t.dispose();
   }
