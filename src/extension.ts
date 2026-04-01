@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import { execSync } from "child_process";
 import { discoverWorktrees, Worktree } from "./worktrees";
-import { createTrellisTerminals, killAllTrellisTerminals } from "./terminals";
+import { createTrellisTerminals, killStaleTerminals } from "./terminals";
+import { manageWorktrees } from "./worktree-manager";
 import { getAgentCommand, getAutoLaunchOnOpen } from "./config";
 
 let statusBarItem: vscode.StatusBarItem | undefined;
@@ -118,6 +119,7 @@ async function launchSession(): Promise<void> {
   }
 
   const selected = picks.map((p) => p.wt);
+  killStaleTerminals(worktrees);
   const agentCommand = getAgentCommand();
 
   const firstTerminal = createTrellisTerminals(mainWorktree, selected, agentCommand);
@@ -150,13 +152,69 @@ async function focusTerminal(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Command: trellis.killAll
+// Command: trellis.manage
 // ---------------------------------------------------------------------------
 
-function killAll(): void {
-  killAllTrellisTerminals();
-  sessionActive = false;
-  updateStatusBar();
+async function manage(): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot) {
+    vscode.window.showErrorMessage("Trellis: No workspace folder is open.");
+    return;
+  }
+
+  const gitRoot = getGitRoot(workspaceRoot);
+  if (!gitRoot) {
+    vscode.window.showErrorMessage(
+      "Trellis: The workspace is not inside a git repository."
+    );
+    return;
+  }
+
+  await manageWorktrees(gitRoot);
+}
+
+// ---------------------------------------------------------------------------
+// Command: trellis.cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupStale(): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot) {
+    vscode.window.showErrorMessage("Trellis: No workspace folder is open.");
+    return;
+  }
+
+  const gitRoot = getGitRoot(workspaceRoot);
+  if (!gitRoot) {
+    vscode.window.showErrorMessage(
+      "Trellis: The workspace is not inside a git repository."
+    );
+    return;
+  }
+
+  let worktrees: Worktree[];
+  try {
+    worktrees = discoverWorktrees(gitRoot);
+  } catch (err) {
+    vscode.window.showErrorMessage(
+      `Trellis: Failed to list git worktrees — ${String(err)}`
+    );
+    return;
+  }
+
+  killStaleTerminals(worktrees);
+
+  const hasTrellisTerminal = vscode.window.terminals.some(
+    (t) => t.name.includes(" · agent") || t.name.includes(" · cli")
+  );
+  if (!hasTrellisTerminal && sessionActive) {
+    sessionActive = false;
+    updateStatusBar();
+  }
+
+  vscode.window.showInformationMessage(
+    "Trellis: Cleaned up terminals for deleted worktrees."
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +225,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand("trellis.launch", launchSession),
     vscode.commands.registerCommand("trellis.focus", focusTerminal),
-    vscode.commands.registerCommand("trellis.killAll", killAll)
+    vscode.commands.registerCommand("trellis.cleanup", cleanupStale),
+    vscode.commands.registerCommand("trellis.manage", manage)
   );
 
   statusBarItem = vscode.window.createStatusBarItem(
