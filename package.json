@@ -32,8 +32,12 @@
         "title": "Trellis: Clean Up Stale Terminals"
       },
       {
-        "command": "trellis.manage",
-        "title": "Trellis: Manage Worktrees"
+        "command": "trellis.addWorktree",
+        "title": "Trellis: Add Worktree"
+      },
+      {
+        "command": "trellis.removeWorktree",
+        "title": "Trellis: Remove Worktree"
       }
     ],
     "keybindings": [
