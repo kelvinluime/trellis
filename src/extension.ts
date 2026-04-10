@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { execSync } from "child_process";
 import { discoverWorktrees, Worktree } from "./worktrees";
 import { createTrellisTerminals, killStaleTerminals } from "./terminals";
-import { manageWorktrees } from "./worktree-manager";
+import { addWorktree, removeWorktree } from "./worktree-manager";
 import { getAgentCommand, getAutoLaunchOnOpen } from "./config";
 
 let statusBarItem: vscode.StatusBarItem | undefined;
@@ -108,7 +108,7 @@ async function launchSession(): Promise<void> {
       canPickMany: true,
       title: "Trellis: Select worktrees to open",
       placeHolder: candidates.length === 0
-        ? "No additional worktrees match the pattern — will open main only"
+        ? "No worktrees found — create a worktree first"
         : "Space to toggle, Enter to confirm",
     }
   );
@@ -122,8 +122,8 @@ async function launchSession(): Promise<void> {
   killStaleTerminals(worktrees);
   const agentCommand = getAgentCommand();
 
-  const firstTerminal = createTrellisTerminals(mainWorktree, selected, agentCommand);
-  firstTerminal.show(false);
+  const firstTerminal = createTrellisTerminals(selected, agentCommand);
+  firstTerminal?.show(false);
 
   sessionActive = true;
   updateStatusBar();
@@ -152,16 +152,17 @@ async function focusTerminal(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Command: trellis.manage
+// Commands: trellis.addWorktree / trellis.removeWorktree
 // ---------------------------------------------------------------------------
 
-async function manage(): Promise<void> {
+async function withGitRoot(
+  fn: (gitRoot: string) => Promise<void>
+): Promise<void> {
   const workspaceRoot = getWorkspaceRoot();
   if (!workspaceRoot) {
     vscode.window.showErrorMessage("Trellis: No workspace folder is open.");
     return;
   }
-
   const gitRoot = getGitRoot(workspaceRoot);
   if (!gitRoot) {
     vscode.window.showErrorMessage(
@@ -169,8 +170,7 @@ async function manage(): Promise<void> {
     );
     return;
   }
-
-  await manageWorktrees(gitRoot);
+  await fn(gitRoot);
 }
 
 // ---------------------------------------------------------------------------
@@ -226,7 +226,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("trellis.launch", launchSession),
     vscode.commands.registerCommand("trellis.focus", focusTerminal),
     vscode.commands.registerCommand("trellis.cleanup", cleanupStale),
-    vscode.commands.registerCommand("trellis.manage", manage)
+    vscode.commands.registerCommand("trellis.addWorktree", () => withGitRoot(addWorktree)),
+    vscode.commands.registerCommand("trellis.removeWorktree", () => withGitRoot(removeWorktree))
   );
 
   statusBarItem = vscode.window.createStatusBarItem(

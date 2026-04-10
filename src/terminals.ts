@@ -29,38 +29,33 @@ function getOrCreate(
 }
 
 /**
- * Create (or reuse) all terminals for the main worktree, then for each
- * additional worktree in the provided list (already sorted).
- * Returns the main · agent terminal so the caller can focus it.
+ * Create (or reuse) terminals for each worktree in the provided list (already sorted).
+ * Returns the first worktree's agent terminal so the caller can focus it,
+ * or undefined if the list is empty.
  */
 export function createTrellisTerminals(
-  mainWorktree: Worktree,
-  additionalWorktrees: Worktree[],
+  worktrees: Worktree[],
   agentCommand: string
-): vscode.Terminal {
-  const mainLabel = "main";
+): vscode.Terminal | undefined {
+  let first: vscode.Terminal | undefined;
 
-  const mainAgent = getOrCreate(
-    `${mainLabel}${AGENT_SUFFIX}`,
-    mainWorktree.worktreePath,
-    agentCommand
-  );
-  getOrCreate(`${mainLabel}${CLI_SUFFIX}`, mainWorktree.worktreePath);
-
-  for (const wt of additionalWorktrees) {
-    getOrCreate(`${wt.name}${AGENT_SUFFIX}`, wt.worktreePath, agentCommand);
+  for (const wt of worktrees) {
+    const agent = getOrCreate(`${wt.name}${AGENT_SUFFIX}`, wt.worktreePath, agentCommand);
     getOrCreate(`${wt.name}${CLI_SUFFIX}`, wt.worktreePath);
+    if (!first) {
+      first = agent;
+    }
   }
 
-  return mainAgent;
+  return first;
 }
 
 /**
  * Dispose terminals for worktrees that no longer exist.
- * Keeps terminals whose name prefix matches "main" or an active worktree name.
+ * Keeps terminals whose name prefix matches an active worktree name.
  */
 export function killStaleTerminals(activeWorktrees: Worktree[]): void {
-  const validPrefixes = new Set<string>(["main"]);
+  const validPrefixes = new Set<string>();
   for (const wt of activeWorktrees) {
     if (!wt.isMain) {
       validPrefixes.add(wt.name);
